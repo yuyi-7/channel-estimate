@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
+import os
 
 # 把虚部放在一起，实部放在一起,顺便归一化
 def reshape_dim(a):
@@ -23,12 +23,12 @@ def reshape_dim(a):
     return np.array(temp).astype(np.float32)
 
 
-def read_data():
+def read_data(snr):
     # 读取数据
-    data_output_imag = pd.read_csv('0dB_source_data_imag.csv', header=None).T
-    data_output_real = pd.read_csv('0dB_source_data_real.csv', header=None).T
-    data_input_imag = pd.read_csv('0dB_zf_data_imag.csv', header=None).T
-    data_input_real = pd.read_csv('0dB_zf_data_real.csv', header=None).T
+    data_output_imag = pd.read_csv(os.path.join('data','%ddB_source_data_imag.csv'%snr), header=None).T
+    data_output_real = pd.read_csv(os.path.join('data','%ddB_source_data_real.csv'%snr), header=None).T
+    data_input_imag = pd.read_csv(os.path.join('data','%ddB_zf_data_imag.csv'%snr), header=None).T
+    data_input_real = pd.read_csv(os.path.join('data','%ddB_zf_data_real.csv'%snr), header=None).T
     
     
     # 分开输入输出,实部虚部放一起
