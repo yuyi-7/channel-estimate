@@ -20,25 +20,8 @@ TRAINING_STEPS = 500  # 训练多少次
 SNR = []  # 要训练几个SNR
 
 # 读取数据
-data_output_imag = pd.read_csv('0dB_source_data_imag.csv', header=None)
-data_output_real = pd.read_csv('0dB_source_data_real.csv', header=None)
-data_input_imag = pd.read_csv('0dB_zf_data_imag.csv', header=None)
-data_input_real = pd.read_csv('0dB_zf_data_real.csv', header=None)
+X_train, X_test, Y_train, Y_test = read_data(0.25)
 
-# 把虚部放在一起，实部放在一起,顺便归一化
-#reshape_dim(data)
-
-# 分开输入输出
-X = pd.concat([data_input_real, data_input_imag], axis=1)
-Y = pd.concat([data_output_real, data_output_imag], axis=1)
-
-# 训练测试数据分离
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.25)
-
-# x_train = tf.convert_to_tensor(X_train)
-# x_test = tf.convert_to_tensor(X_test)
-# y_train = tf.convert_to_tensor(Y_train)
-# y_test = tf.convert_to_tensor(Y_test)
 
 # 定义整个模型的x和y
 x = tf.placeholder(tf.float32, [None, INPUT_NODE], name='x_input')
