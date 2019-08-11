@@ -21,8 +21,9 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
     weight = []
     # 第一层密集层，添加L2正则
     with tf.variable_scope('dnn-layer1'):
+        input_tensor_shape = input_tensor._shape_tuple()[1]
         # 第一层wight，shape需要设置
-        layer1_weight = tf.get_variable('weight', [input_tensor._shape_tuple[1], LAYER1_NODE],
+        layer1_weight = tf.get_variable('weight', [input_tensor_shape, LAYER1_NODE],
                                         initializer=tf.truncated_normal_initializer(stddev=0.1))
 
         if regularizer_rate != None:

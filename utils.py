@@ -23,18 +23,17 @@ def reshape_dim(a):
     return np.array(temp).astype(np.float32)
 
 
-def read_data(test_size):
+def read_data():
     # 读取数据
-    data_output_imag = pd.read_csv('0dB_source_data_imag.csv', header=None)
-    data_output_real = pd.read_csv('0dB_source_data_real.csv', header=None)
-    data_input_imag = pd.read_csv('0dB_zf_data_imag.csv', header=None)
-    data_input_real = pd.read_csv('0dB_zf_data_real.csv', header=None)
+    data_output_imag = pd.read_csv('0dB_source_data_imag.csv', header=None).T
+    data_output_real = pd.read_csv('0dB_source_data_real.csv', header=None).T
+    data_input_imag = pd.read_csv('0dB_zf_data_imag.csv', header=None).T
+    data_input_real = pd.read_csv('0dB_zf_data_real.csv', header=None).T
+    
     
     # 分开输入输出,实部虚部放一起
     X = pd.concat([data_input_real, data_input_imag], axis=1)
     Y = pd.concat([data_output_real, data_output_imag], axis=1)
     
-    # 训练测试数据分离
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size)
     
-    return X_train, X_test, Y_train, Y_test
+    return X, Y
