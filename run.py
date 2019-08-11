@@ -101,14 +101,18 @@ with tf.Session() as sess:
         test_loss_list.append(test_loss_snr)
 
 
-        # 
+        # 开始评估
+        # 映射到0，1
+        ber_y = tf.where(tf.greater_equal(y, 0), 1, 0)
+        ber_y_ = tf.where(tf.greater_equal(y_, 0), 1, 0)
+
         # 评估数据的index
         index = np.random.randint(0, TRAIN_NUM, BER_CAL_NUM)
         
         # 用1000帧数据评估ber
         snr_ber.append(
             sess.run(
-                tf.math.divide(tf.reduce_sum(tf.abs(y - y_)), BER_CAL_NUM * 480),
+                tf.math.divide(tf.reduce_sum(tf.abs(ber_y - ber_y_)), BER_CAL_NUM * 480),
                 feed_dict={x: np.array(X)[index],
                            y_: np.array(Y)[index]}))
 
