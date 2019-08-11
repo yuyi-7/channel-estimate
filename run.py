@@ -6,6 +6,9 @@ from dnn import dnn_interface
 from utils import *
 
 
+INPUT_NODE = 480
+OUTPUT_NODE = 480
+
 dnn_drop = None # dnn的drop大小
 dnn_regularizer_rate = None  # dnn的正则化大小
 output_dnn_shape = None  # dnn输出节点数
@@ -17,17 +20,20 @@ TRAINING_STEPS = 500  # 训练多少次
 SNR = []  # 要训练几个SNR
 
 # 读取数据
-data = pd.read_csv()
+data_output_imag = pd.read_csv('0dB_source_data_imag.csv', header=None)
+data_output_real = pd.read_csv('0dB_source_data_real.csv', header=None)
+data_input_imag = pd.read_csv('0dB_zf_data_imag.csv', header=None)
+data_input_real = pd.read_csv('0dB_zf_data_real.csv', header=None)
 
 # 把虚部放在一起，实部放在一起,顺便归一化
-reshape_dim(data)
+#reshape_dim(data)
 
 # 分开输入输出
-X
-Y
+X = pd.concat([data_input_real, data_input_imag], axis=1)
+Y = pd.concat([data_output_real, data_output_imag], axis=1)
 
 # 训练测试数据分离
-X_train,X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.25)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.25)
 
 # x_train = tf.convert_to_tensor(X_train)
 # x_test = tf.convert_to_tensor(X_test)
@@ -67,6 +73,13 @@ train_step = tf.train.AdamOptimizer(LEARNING_RATE_BASE).minimize(loss, global_st
 with tf.Session() as sess:
     snr_loss = []
     for snr in SNR:
+    
+        E_x = 10 ** (0.1 * SNR)  # 信号能量
+        
+        # 添加噪声
+        X = X * E_x + np.random.randn(TRAIN_NUM, INPUT_NODE, 2)  # sigma * r + mu
+        ## 在前面归一化还是在后面归一化
+        
         tf.global_variables_initializer().run()  # 初始化
         
         for i in range(TRAINING_STEPS):
@@ -86,7 +99,7 @@ with tf.Session() as sess:
             if i % 100 == 0:
                 print('snr：%d,训练了%d次,训练集损失%f,测试集损失%f' % (snr, i, train_loss, test_loss))
                 
-        snr_loss.append(sess.run(loss, feed_dict={x: X_test[start:end], y_: Y_test[start:end]}))
+        #snr_loss.append(sess.run(loss, feed_dict={x: X_test[start:end], y_: Y_test[start:end]}))
     
     print('snr:', SNR)
     print('loss:', snr_loss)
