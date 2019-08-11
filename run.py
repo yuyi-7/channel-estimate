@@ -103,8 +103,8 @@ with tf.Session() as sess:
 
         # 开始评估
         # 映射到0，1
-        ber_y = tf.where(tf.greater_equal(y, 0), 1, 0)
-        ber_y_ = tf.where(tf.greater_equal(y_, 0), 1, 0)
+        ber_y = tf.where(tf.greater_equal(y, tf.zeros_like(y)), 1, 0)
+        ber_y_ = tf.where(tf.greater_equal(y_, tf.zeros_like(y_)), 1, 0)
 
         # 评估数据的index
         index = np.random.randint(0, TRAIN_NUM, BER_CAL_NUM)
