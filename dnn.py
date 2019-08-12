@@ -19,6 +19,7 @@ output layer sigmoid
 def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
 
     weight = []
+    layer_output = []
     # 第一层密集层，添加L2正则
     with tf.variable_scope('dnn-layer1'):
         input_tensor_shape = input_tensor._shape_tuple()[1]
@@ -38,6 +39,8 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
             layer1 = tf.nn.dropout(layer1, drop)
 
         weight.append(layer1_weight)
+        layer_output.append(layer1)
+
 
     # 第二层密集层，添加L2正则
     with tf.variable_scope('dnn-layer2'):
@@ -56,6 +59,7 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
             layer2 = tf.nn.dropout(layer2, drop)
 
         weight.append(layer2_weight)
+        layer_output.append(layer2)
 
     # 第三层密集层，添加L2正则
     with tf.variable_scope('dnn-layer3'):
@@ -73,6 +77,7 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
             layer3 = tf.nn.dropout(layer3, drop)
 
         weight.append(layer3_weight)
+        layer_output.append(layer3)
         
     # 输出层
     with tf.variable_scope('layer4_output'):
@@ -86,7 +91,9 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
 
         # sigmoid激活函数
         layer4 = tf.nn.sigmoid(tf.matmul(layer3, layer4_weight) + layer4_biase)
+        # layer4 = tf.matmul(layer3, layer4_weight) + layer4_biase
 
         weight.append(layer4_weight)
+        layer_output.append(layer4)
     
-    return layer4, weight
+    return layer4, weight, layer_output
