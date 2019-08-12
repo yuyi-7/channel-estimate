@@ -12,7 +12,7 @@ input layer
 layer1 512  tanh
 layer2 1024  tanh
 layer3 512  tanh
-output layer
+output layer sigmoid
 """
 
 
@@ -84,7 +84,8 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
         layer4_biase = tf.get_variable('biase', [output_shape],
                                        initializer=tf.constant_initializer(0.0))
 
-        layer4 = tf.matmul(layer3, layer4_weight) + layer4_biase
+        # sigmoid激活函数
+        layer4 = tf.nn.sigmoid(tf.matmul(layer3, layer4_weight) + layer4_biase)
 
         weight.append(layer4_weight)
     

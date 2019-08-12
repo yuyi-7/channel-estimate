@@ -34,6 +34,9 @@ def read_data(snr):
     # 分开输入输出,实部虚部放一起
     X = pd.concat([data_input_real, data_input_imag], axis=1)
     Y = pd.concat([data_output_real, data_output_imag], axis=1)
+
+    # 序列化Y
+    Y = Y.applymap(lambda x:1 if x>=0 else 0)
     
     
-    return X, Y
+    return np.array(X), np.array(Y)
