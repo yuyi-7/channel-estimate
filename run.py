@@ -35,16 +35,18 @@ y_ = tf.placeholder(tf.float32, [None, OUTPUT_NODE], name='y_input')
 
 
 # 神经网络
-y, weight = dnn_interface(input_tensor=x,
-                          output_shape=OUTPUT_NODE,
-                          drop=dnn_drop,
-                          regularizer_rate=dnn_regularizer_rate)
+y, weight, layer_output = dnn_interface(input_tensor=x,
+                                        output_shape=OUTPUT_NODE,
+                                        drop=dnn_drop,
+                                        regularizer_rate=dnn_regularizer_rate)
 
 # 损失函数
 # loss = tf.math.divide(tf.reduce_sum(tf.abs(y - y_)), BATCH_SIZE * 480)  # BER
 
 # 交叉熵
 loss = -tf.reduce_mean(y_ * tf.log(tf.clip_by_value(y, 1e-8, 1e2)))
+# loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=y_,
+#                                                               logits=y))
 
 # loss = ber
 #loss = ber + tf.add_n(tf.get_collection('losses'))
@@ -95,11 +97,13 @@ with tf.Session() as sess:
         
         for i in range(TRAINING_STEPS):
             # 设置批次
-            start = (i * BATCH_SIZE) % TRAIN_NUM
-            end = min(start + BATCH_SIZE, TRAIN_NUM)
+            start = int((i * BATCH_SIZE) % TRAIN_NUM)
+            end = int(min(start + BATCH_SIZE, TRAIN_NUM))
 
-            _ = sess.run(train_step,
-                         feed_dict={x: X_train[start:end], y_: Y_train[start:end]})
+            # print('start:%d, end:%d'%(start,end))
+
+            sess.run(train_step,
+                     feed_dict={x: X_train[start:end], y_: Y_train[start:end]})
             
             train_loss = sess.run(loss,
                                   feed_dict={x: X_train[start:end], y_: Y_train[start:end]})
@@ -109,31 +113,42 @@ with tf.Session() as sess:
                                      feed_dict={x: X_test[start-25000:end-25000], y_: Y_test[start-25000:end-25000]})
 
             if i % 100 == 0:
-                if start >= 37500:
+                if start >= 25000:
                     print('snr：%d,训练了%d次,训练集损失%.12f,测试集损失%.12f' % (snr, i, train_loss, test_loss))
-                    train_loss_snr.append(train_loss)
-                    test_loss_snr.append(test_loss)
+                    train_loss_snr.append(np.log10(train_loss))
+                    test_loss_snr.append(np.log10(test_loss))
+                    # print('x:')
+                    # print(sess.run(x,feed_dict={x: X_test[start-25000:start-25000+1]}))
+                    # print('y:')
+                    # print(sess.run(y,feed_dict={x: X_test[start-25000:start-25000+1]}))
+                    # print(sess.run(y_,feed_dict={y_:Y_test[start-25000:start-25000+1]}))
                 else:
                     print('snr：%d,训练了%d次,训练集损失%.12f' % (snr, i, train_loss))
-                    train_loss_snr.append(train_loss)
-
+                    train_loss_snr.append(np.log10(train_loss))
+                # print('layer_output:')
+                # print(sess.run(layer_output,feed_dict={x: X_train[start:start+1], y:Y_train[start:start+1]}))
+                # print('y_:')
+                # print(sess.run(y_,feed_dict={y_:Y_train[start:start+1]}))
+                # print('layer4:')
+                # print(sess.run(y,feed_dict={x:X_train[start:start+1]}))
 
         train_loss_list.append(train_loss_snr)
         test_loss_list.append(test_loss_snr)
+        # print(test_loss_list)
 
 
         # 开始评估
         # 映射到0，1
-        # ber_y = tf.where(tf.greater_equal(y, tf.zeros_like(y)), tf.ones_like(y), tf.zeros_like(y))
+        ber_y = tf.where(tf.greater_equal(y, tf.zeros_like(y)), tf.ones_like(y), tf.zeros_like(y))
         # ber_y_ = tf.where(tf.greater_equal(y_, tf.zeros_like(y_)), tf.ones_like(y), tf.zeros_like(y))
 
         # 评估数据的index
-        index = np.random.randint(0, TRAIN_NUM, BER_CAL_NUM)
+        index = np.random.randint(0, int(TRAIN_NUM), BER_CAL_NUM)
         
         # 用1000帧数据评估ber
         snr_ber.append(
             sess.run(
-                tf.math.divide(tf.reduce_sum(tf.abs(y - y_)), BER_CAL_NUM * 480),
+                tf.math.divide(tf.reduce_sum(tf.abs(ber_y - y_)), BER_CAL_NUM * 480),
                 feed_dict={x: np.array(X)[index],
                            y_: np.array(Y)[index]}))
 
@@ -141,7 +156,7 @@ with tf.Session() as sess:
     print('snr:', SNR)
     print('loss:', snr_ber)
     
-    plt.figure(figsize=(10, 10))
+    plt.figure()
     plt.plot(SNR, snr_ber)
     plt.grid()
     plt.xlabel('SNR')
