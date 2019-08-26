@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from tensorflow import keras
 
 LAYER1_NODE = 512  # 第一层节点
 
@@ -90,3 +90,26 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
         weight.append(layer4_weight)
     
     return layer4, weight
+
+
+def keras_dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
+    
+    layer1 = keras.layers.Dense(128, activation='tanh', kernel_regularizer=regularizer_rate)(input_tensor)
+
+    if drop is not None:
+        layer1 = keras.layers.Dropout(drop)(layer1)
+    
+    layer2 = keras.layers.Dense(256, activation='tanh', kernel_regularizer=regularizer_rate)(layer1)
+    
+    if drop is not None:
+        layer2 = keras.layers.Dropout(drop)(layer2)
+    
+    layer3 = keras.layers.Dense(128, activation='tanh', kernel_regularizer=regularizer_rate)(layer2)
+    
+    if drop is not None:
+        layer3 = keras.layers.Dropout(drop)(layer3)
+    
+    y = keras.layers.Dense(output_shape, activation='sigmoid', kernel_regularizer=regularizer_rate)(layer3)
+    
+    return y
+
