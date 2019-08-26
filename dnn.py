@@ -94,17 +94,17 @@ def dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
 
 def keras_dnn_interface(input_tensor, output_shape, regularizer_rate=None, drop=None):
     
-    layer1 = keras.layers.Dense(128, activation='tanh', kernel_regularizer=regularizer_rate)(input_tensor)
+    layer1 = keras.layers.Dense(LAYER1_NODE, activation='tanh', kernel_regularizer=regularizer_rate)(input_tensor)
 
     if drop is not None:
         layer1 = keras.layers.Dropout(drop)(layer1)
     
-    layer2 = keras.layers.Dense(256, activation='tanh', kernel_regularizer=regularizer_rate)(layer1)
+    layer2 = keras.layers.Dense(LAYER2_NODE, activation='tanh', kernel_regularizer=regularizer_rate)(layer1)
     
     if drop is not None:
         layer2 = keras.layers.Dropout(drop)(layer2)
     
-    layer3 = keras.layers.Dense(128, activation='tanh', kernel_regularizer=regularizer_rate)(layer2)
+    layer3 = keras.layers.Dense(LAYER3_NODE, activation='tanh', kernel_regularizer=regularizer_rate)(layer2)
     
     if drop is not None:
         layer3 = keras.layers.Dropout(drop)(layer3)
