@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-from dnn import dnn_interface
+from dnn import *
 from utils import *
 from matplotlib import pyplot as plt
 
@@ -19,7 +19,7 @@ TEST_SIZE = 0.25
 TRAIN_NUM = 50000 * (1-TEST_SIZE)  # 训练总量
 
 TRAINING_STEPS = 5000  # 训练多少次
-BER_CAL_NUM = 1000  # 评估用的数据量
+BER_CAL_NUM = 10000  # 评估用的数据量
 
 STAIRCASE = True
 SNR = [0, 5, 10, 15, 20, 25, 30]  # 要训练几个SNR
@@ -38,11 +38,14 @@ y_ = tf.placeholder(tf.float32, [None, OUTPUT_NODE], name='y_input')
 
 # 神经网络
 
-y, weight, layer_output = dnn_interface(input_tensor=x,
-                                        output_shape=OUTPUT_NODE,
-                                        drop=dnn_drop,
-                                        regularizer_rate=dnn_regularizer_rate)
+# y, weight, layer_output = dnn_interface(input_tensor=x,
+#                                         output_shape=OUTPUT_NODE,
+#                                         drop=dnn_drop,
+#                                         regularizer_rate=dnn_regularizer_rate)
 
+y = keras_dnn_interface(input_tensor=x,
+                        output_shape=OUTPUT_NODE,
+                        drop=dnn_drop)
 
 # 损失函数
 # loss = tf.math.divide(tf.reduce_sum(tf.abs(y - y_)), BATCH_SIZE * 480)  # BER
@@ -74,7 +77,10 @@ learning_rate = tf.train.exponential_decay(LEARNING_RATE_BASE,
 # 定义优化函数
 train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step)
 
-with tf.Session() as sess:
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True   #不全部占满显存, 按需分配
+
+with tf.Session(config=config) as sess:
     snr_ber = []
     train_loss_list = []
     test_loss_list = []
@@ -148,7 +154,7 @@ with tf.Session() as sess:
         # 开始评估
         # 映射到0，1
 
-        ber_y = tf.where(tf.greater_equal(y, tf.zeros_like(y)), tf.ones_like(y), tf.zeros_like(y))
+        ber_y = tf.where(tf.greater(y, tf.zeros_like(y)), tf.ones_like(y), tf.zeros_like(y))
         # ber_y_ = tf.where(tf.greater_equal(y_, tf.zeros_like(y_)), tf.ones_like(y), tf.zeros_like(y))
 
         # 评估数据的index
@@ -159,7 +165,6 @@ with tf.Session() as sess:
         snr_ber.append(
             sess.run(
                 tf.math.divide(tf.reduce_sum(tf.abs(ber_y - y_)), BER_CAL_NUM * 480),
-
                 feed_dict={x: np.array(X)[index],
                            y_: np.array(Y)[index]}))
 
