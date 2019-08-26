@@ -16,4 +16,7 @@ picture
 *.spec
 
 data
+
 *.csv
+
+*.xml
