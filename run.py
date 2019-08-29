@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from dnn import *
 from utils import *
 from matplotlib import pyplot as plt
-
+from datetime import datetime
 INPUT_NODE = 480
 OUTPUT_NODE = 480
 
@@ -16,19 +16,22 @@ dnn_regularizer_rate = None  # dnn的正则化大小
 LEARNING_RATE_BASE = 0.01  # 学习速率
 BATCH_SIZE = 200  # 一批数据量
 TEST_SIZE = 0.25
-TRAIN_NUM = 50000 * (1-TEST_SIZE)  # 训练总量
+TRAIN_NUM = 1e5  # 训练总量
 
-TRAINING_STEPS = 5000  # 训练多少次
+TRAINING_STEPS = 10000  # 训练多少次
 BER_CAL_NUM = 10000  # 评估用的数据量
 
 STAIRCASE = True
-SNR = [0, 5, 10, 15, 20, 25, 30]  # 要训练几个SNR
+SNR = [0, 10, 20, 30, 40]  # 要训练几个SNR
 
 # # 读取数据
 # X, Y = read_data()
 #
 # # 输出的归一化，只需要归一化一次
 # Y = (Y - np.mean(Y)) / np.std(Y)
+
+#计时开始
+tic = datetime.now()
 
 # 定义整个模型的x和y
 x = tf.placeholder(tf.float32, [None, INPUT_NODE], name='x_input')
@@ -51,11 +54,16 @@ y = keras_dnn_interface(input_tensor=x,
 # loss = tf.math.divide(tf.reduce_sum(tf.abs(y - y_)), BATCH_SIZE * 480)  # BER
 
 # 交叉熵
-loss = -tf.reduce_mean(y_ * tf.log(tf.clip_by_value(y, 1e-8, 1e2)))
+# cross_entropy = y_ * log(y) + (1-y_) * log(1-y)
+y_softmax = tf.nn.softmax(y)
+loss = -tf.reduce_mean(
+    y_ * tf.log(tf.clip_by_value(y_softmax, 1e-8, 1e2)) + (1 - y_) * tf.log(tf.clip_by_value(1 - y_softmax, 1e-8, 1e2)))
 
-# loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=y_,
-#                                                               logits=y))
+# loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_,
+#                                                                  logits=y))
 
+# MSE
+# loss = tf.reduce_mean(tf.square(y-y_))
 
 # loss = ber
 #loss = ber + tf.add_n(tf.get_collection('losses'))
@@ -75,7 +83,7 @@ learning_rate = tf.train.exponential_decay(LEARNING_RATE_BASE,
                                            staircase=STAIRCASE)
 
 # 定义优化函数
-train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step)
+train_step = tf.train.AdamOptimizer(LEARNING_RATE_BASE).minimize(loss, global_step)
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True   #不全部占满显存, 按需分配
@@ -87,13 +95,8 @@ with tf.Session(config=config) as sess:
     for snr in SNR:
         train_loss_snr = []
         test_loss_snr = []
-        # E_x = 10 ** (0.1 * snr)  # 信号能量
-        #
-        # # 添加噪声
-        # X_snr = X * E_x + np.random.randn(TRAIN_NUM, INPUT_NODE)  # sigma * r + mu
 
         X,Y = read_data(snr)
-
 
         # 归一化
         X = (X - np.mean(X)) / np.std(X)
@@ -118,20 +121,22 @@ with tf.Session(config=config) as sess:
             sess.run(train_step,
                      feed_dict={x: X_train[start:end], y_: Y_train[start:end]})
 
+            train_test_ = int(TRAIN_NUM * (1-TEST_SIZE))
+            if start < train_test_:
+                train_loss = sess.run(loss,
+                                      feed_dict={x: X_train[start:end], y_: Y_train[start:end]})
             
-            train_loss = sess.run(loss,
-                                  feed_dict={x: X_train[start:end], y_: Y_train[start:end]})
-            
-            if start >= (50000*0.75 - 50000*0.25):
+            if start >= train_test_:
                 test_loss = sess.run(loss,
-                                     feed_dict={x: X_test[start-25000:end-25000], y_: Y_test[start-25000:end-25000]})
+                                     feed_dict={x: X_test[start-train_test_:end-train_test_],
+                                                y_: Y_test[start-train_test_:end-train_test_]})
 
             if i % 100 == 0:
 
-                if start >= 25000:
+                if start >= train_test_:
                     print('snr：%d,训练了%d次,训练集损失%.12f,测试集损失%.12f' % (snr, i, train_loss, test_loss))
-                    train_loss_snr.append(np.log10(train_loss))
-                    test_loss_snr.append(np.log10(test_loss))
+                    train_loss_snr.append(train_loss)
+                    test_loss_snr.append(test_loss)
                     # print('x:')
                     # print(sess.run(x,feed_dict={x: X_test[start-25000:start-25000+1]}))
                     # print('y:')
@@ -139,7 +144,7 @@ with tf.Session(config=config) as sess:
                     # print(sess.run(y_,feed_dict={y_:Y_test[start-25000:start-25000+1]}))
                 else:
                     print('snr：%d,训练了%d次,训练集损失%.12f' % (snr, i, train_loss))
-                    train_loss_snr.append(np.log10(train_loss))
+                    train_loss_snr.append(train_loss)
                 # print('layer_output:')
                 # print(sess.run(layer_output,feed_dict={x: X_train[start:start+1], y:Y_train[start:start+1]}))
                 # print('y_:')
@@ -162,16 +167,26 @@ with tf.Session(config=config) as sess:
 
         
         # 用1000帧数据评估ber
-        snr_ber.append(
-            sess.run(
+        snr_present = sess.run(
                 tf.math.divide(tf.reduce_sum(tf.abs(ber_y - y_)), BER_CAL_NUM * 480),
                 feed_dict={x: np.array(X)[index],
-                           y_: np.array(Y)[index]}))
+                           y_: np.array(Y)[index]})
+        print('y:',end='\t')
+        print(sess.run(y, feed_dict={x: np.array(X)[index]}))
+        print('ber_y:', end='\t')
+        print(sess.run(ber_y, feed_dict={x: np.array(X)[index]}))
+        print('y_:', end='\t')
+        print(sess.run(y_, feed_dict={y_: np.array(Y)[index]}))
+
+        print(snr_present)
+        snr_ber.append(snr_present)
 
     # snr_ber = np.log10(snr_ber)
     print('snr:', SNR)
     print('loss:', snr_ber)
-    
+    toc = datetime.now()#计时结束
+    print('Elapsed time:%f seconds'%(toc - tic).total_seconds())#计算本次运行时间
+
 
     plt.figure()
     plt.plot(SNR, snr_ber)

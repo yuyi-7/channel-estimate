@@ -122,6 +122,6 @@ def keras_dnn_interface(input_tensor, output_shape, drop=None):
     if drop is not None:
         layer3 = keras.layers.Dropout(drop)(layer3)
     
-    y = keras.layers.Dense(output_shape, activation='sigmoid')(layer3)
+    y = keras.layers.Dense(output_shape)(layer3)
     
     return y

@@ -25,10 +25,10 @@ def reshape_dim(a):
 
 def read_data(snr):
     # 读取数据
-    data_output_imag = pd.read_csv(os.path.join('data','%ddB_source_data_imag.csv'%snr), header=None).T
-    data_output_real = pd.read_csv(os.path.join('data','%ddB_source_data_real.csv'%snr), header=None).T
-    data_input_imag = pd.read_csv(os.path.join('data','%ddB_zf_data_imag.csv'%snr), header=None).T
-    data_input_real = pd.read_csv(os.path.join('data','%ddB_zf_data_real.csv'%snr), header=None).T
+    data_output_imag = pd.read_csv(os.path.join('RxDistortData','%ddB_source_data_imag.csv'%snr), header=None).T
+    data_output_real = pd.read_csv(os.path.join('RxDistortData','%ddB_source_data_real.csv'%snr), header=None).T
+    data_input_imag = pd.read_csv(os.path.join('RxDistortData','%ddB_dis_data_imag.csv'%snr), header=None).T
+    data_input_real = pd.read_csv(os.path.join('RxDistortData','%ddB_dis_data_real.csv'%snr), header=None).T
     
     
     # 分开输入输出,实部虚部放一起
