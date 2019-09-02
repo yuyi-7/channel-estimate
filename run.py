@@ -13,8 +13,8 @@ OUTPUT_NODE = 480
 dnn_drop = None # dnn的drop大小
 dnn_regularizer_rate = None  # dnn的正则化大小
 
-LEARNING_RATE_BASE = 0.01  # 学习速率
-BATCH_SIZE = 200  # 一批数据量
+LEARNING_RATE_BASE = 0.001  # 学习速率
+BATCH_SIZE = 100  # 一批数据量
 TEST_SIZE = 0.25
 TRAIN_NUM = 1e5  # 训练总量
 
@@ -37,7 +37,7 @@ tic = datetime.now()
 x = tf.placeholder(tf.float32, [None, INPUT_NODE], name='x_input')
 
 y_ = tf.placeholder(tf.float32, [None, OUTPUT_NODE], name='y_input')
-
+print('定义tensor x和tensor y_')
 
 # 神经网络
 
@@ -49,15 +49,16 @@ y_ = tf.placeholder(tf.float32, [None, OUTPUT_NODE], name='y_input')
 y = keras_dnn_interface(input_tensor=x,
                         output_shape=OUTPUT_NODE,
                         drop=dnn_drop)
-
+print('定义神经网络输出 y')
 # 损失函数
 # loss = tf.math.divide(tf.reduce_sum(tf.abs(y - y_)), BATCH_SIZE * 480)  # BER
 
 # 交叉熵
 # cross_entropy = y_ * log(y) + (1-y_) * log(1-y)
-y_softmax = tf.nn.softmax(y)
+y_sigmoid = tf.nn.sigmoid(y)
 loss = -tf.reduce_mean(
-    y_ * tf.log(tf.clip_by_value(y_softmax, 1e-8, 1e2)) + (1 - y_) * tf.log(tf.clip_by_value(1 - y_softmax, 1e-8, 1e2)))
+    y_ * tf.log(tf.clip_by_value(y_sigmoid, 1e-8, 1e2)) + (1 - y_) * tf.log(tf.clip_by_value(1 - y_sigmoid, 1e-8, 1e2)))
+print('定义损失函数 crossentropy')
 
 # loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_,
 #                                                                  logits=y))
@@ -84,6 +85,7 @@ learning_rate = tf.train.exponential_decay(LEARNING_RATE_BASE,
 
 # 定义优化函数
 train_step = tf.train.AdamOptimizer(LEARNING_RATE_BASE).minimize(loss, global_step)
+print('定义优化器 AdanOptimizer')
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True   #不全部占满显存, 按需分配
@@ -96,10 +98,13 @@ with tf.Session(config=config) as sess:
         train_loss_snr = []
         test_loss_snr = []
 
+        print('开始读取数据...')
         X,Y = read_data(snr)
+        print('读取数据完成，X:',X[:5],'\nY:',Y[:5])
 
         # 归一化
         X = (X - np.mean(X)) / np.std(X)
+        print('完成 X 的归一化，归一化后mean:%.5f, std:%.5f'%(X.mean(),X.std()))
         # Y = (Y - np.mean(Y)) / np.std(Y)
         # print(X)
         # print('mean: %f, std: %f'%(X.mean(),X.std()))
@@ -107,6 +112,7 @@ with tf.Session(config=config) as sess:
 
         # 分离训练集与测试集
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
+        print('完成训练集测试集分离，测试集占比%f'%TEST_SIZE)
 
         tf.global_variables_initializer().run()  # 初始化
         
@@ -173,6 +179,8 @@ with tf.Session(config=config) as sess:
                            y_: np.array(Y)[index]})
         print('y:',end='\t')
         print(sess.run(y, feed_dict={x: np.array(X)[index]}))
+        print('y_softmax:', end='\t')
+        print(sess.run(y_sigmoid, feed_dict={x: np.array(X)[index]}))
         print('ber_y:', end='\t')
         print(sess.run(ber_y, feed_dict={x: np.array(X)[index]}))
         print('y_:', end='\t')

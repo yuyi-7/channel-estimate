@@ -29,14 +29,14 @@ def read_data(snr):
     data_output_real = pd.read_csv(os.path.join('RxDistortData','%ddB_source_data_real.csv'%snr), header=None).T
     data_input_imag = pd.read_csv(os.path.join('RxDistortData','%ddB_dis_data_imag.csv'%snr), header=None).T
     data_input_real = pd.read_csv(os.path.join('RxDistortData','%ddB_dis_data_real.csv'%snr), header=None).T
-    
+    print('读取csv完成')
     
     # 分开输入输出,实部虚部放一起
     X = pd.concat([data_input_real, data_input_imag], axis=1)
     Y = pd.concat([data_output_real, data_output_imag], axis=1)
+    print('实部和虚部结合完成')
 
     # 序列化Y
     Y = Y.applymap(lambda x:1 if x>=0 else 0)
-    
-    
+    print('序列化y完成')
     return np.array(X), np.array(Y)
